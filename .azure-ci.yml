@@ -43,7 +43,18 @@ resources:
   - container: ubuntu_1604_arm_cross_container
     image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-ef0ac75-20175511035548
 
-jobs:
+variables:
+  - name: _PublishUsingPipelines
+    value: true
+  - name: _DotNetArtifactsCategory
+    value: .NETCore
+
+  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
+    - group: DotNet-Blob-Feed
+    - name: _dotnetFeedUrl
+      value: https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
+
+stages:
   # Windows legs
   - template: /eng/pipelines/windows.yml
     parameters:
@@ -70,12 +81,16 @@ jobs:
 
   # Publish step. Only run in official builds
   - ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
-    - template: /eng/pipelines/publish.yml
+    - template: /eng/pipelines/pre-publish.yml
       parameters:
         dependsOn:
-          - WindowsTest
-          - WindowsNoTest
-          - AllConfigurations
-          - LinuxTest
-          - MacOS
+          - WindowsStage
+          - LinuxStage
+          - MacOSStage
           # - FreeBSD
+
+    - template: eng\common\templates\post-build\post-build.yml
+      parameters:
+        dependsOn:
+          - PrePublish
+        enableSymbolValidation: false

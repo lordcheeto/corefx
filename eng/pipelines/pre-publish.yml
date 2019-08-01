@@ -1,0 +1,91 @@
+parameters:
+  buildConfiguration: Release
+  dependsOn: []
+
+stages:
+- stage: PrePublish
+  dependsOn: ${{ parameters.dependsOn }}
+  jobs:
+    - template: ../common/templates/jobs/jobs.yml
+      parameters:
+        enableMicrobuild: true
+        jobs:
+        - job: SignAndPrepare
+          timeoutInMinutes: 160
+
+          pool:
+            name: NetCoreInternal-Pool
+            queue: buildpool.windows.10.amd64.vs2017
+
+          workspace:
+            clean: all
+
+          variables:
+            - group: Publish-Build-Assets
+            - group: DotNet-Versions-Publish
+            - _maestroApiEndpoint: https://maestro-prod.westus2.cloudapp.azure.com
+            - _artifactsDir: $(Build.SourcesDirectory)/artifacts
+            - _manifestsDir: $(_artifactsDir)/AssetManifests
+            - _TeamName: DotNetCore
+            - _SignType: real
+
+          steps:
+            - powershell: |
+                $prefix = "refs/heads/"
+                $branch = "$(Build.SourceBranch)"
+                $branchName = $branch
+                if ($branchName.StartsWith($prefix))
+                {
+                  $branchName = $branchName.Substring($prefix.Length)
+                }
+                Write-Host "For Build.SourceBranch $branch, FullBranchName is $branchName"
+                Write-Host "##vso[task.setvariable variable=FullBranchName;]$branchName"
+              displayName: Find true SourceBranchName
+
+            - task: DownloadBuildArtifacts@0
+              displayName: Download packages to publish
+              inputs:
+                artifactName: packages
+                downloadPath: $(_artifactsDir)
+
+            - script: build.cmd
+                      -restore
+                      -ci
+              displayName: Restore tools
+
+            - script: build.cmd
+                      -sign
+                      -ci
+                      -configuration ${{ parameters.buildConfiguration }}
+                      /p:DotNetSignType=$(_SignType)
+                      /p:OfficialBuildId=$(Build.BuildNumber)
+              displayName: Sign packages
+
+            - script: build.cmd
+                      -publish
+                      -ci
+                      -configuration ${{ parameters.buildConfiguration }}
+                      /p:DotNetPublishUsingPipelines=$(_PublishUsingPipelines)
+                      /p:DotNetArtifactsCategory=$(_DotNetArtifactsCategory)
+                      /p:DotNetPublishBlobFeedUrl=$(_dotnetFeedUrl)
+                      /p:DotNetPublishToBlobFeed=true
+                      /p:DotNetPublishBlobFeedKey=$(dotnetfeed-storage-access-key-1)
+              displayName: Publish to artifacts and produce manifest
+
+            - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\sdk-task.ps1
+                      -task PublishBuildAssets -restore -msbuildEngine dotnet
+                      /p:ManifestsPath='$(_manifestsDir)'
+                      /p:BuildAssetRegistryToken=$(MaestroAccessToken)
+                      /p:MaestroApiEndpoint=https://maestro-prod.westus2.cloudapp.azure.com
+                      /p:Configuration=${{ parameters.buildConfiguration }}
+              displayName: Publish to Build Assets Registry
+
+            - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 build.proj
+                      -warnaserror:0 -ci
+                      /t:UpdatePublishedVersions
+                      /p:GitHubAuthToken=$(AccessToken-dotnet-build-bot-public-repo)
+                      /p:VersionsRepoOwner=dotnet
+                      /p:VersionsRepo=versions
+                      /p:VersionsRepoPath=build-info/dotnet/corefx/$(FullBranchName)
+                      /p:ShippedNuGetPackageGlobPath=$(_artifactsDir)/packages/**/*.nupkg
+              displayName: Update dotnet/versions
