@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$(CommonTestPath)\Tests.props" />
   <PropertyGroup>
     <ProjectGuid>{D0DF902A-2486-4A38-B7A7-232B9B6590E1}</ProjectGuid>
@@ -60,6 +60,12 @@
     <Compile Include="$(CommonPathXPath)\TestsWithEncoding\MiscWithEncodings.cs" />
     <Compile Include="$(CommonPathXPath)\XPathExpressionTests\CompileTests.cs" />
     <Compile Include="$(CommonPathXPath)\XPathExpressionTests\EvaluateTests.cs" />
+    <Compile Include="$(CommonPathXPath)\XPathNavigatorTests\ManipulationTests.cs" />
+    <Compile Include="$(CommonPathXPath)\XPathNavigatorTests\XPathNavigatorCommonTests.cs" />
+    <Compile Include="$(CommonPathXPath)\XPathNavigatorTests\XPathNavigatorEvaluateTests.cs" />
+    <Compile Include="$(CommonPathXPath)\XPathNavigatorTests\XPathNavigatorMatchesTests.cs" />
+    <Compile Include="$(CommonPathXPath)\XPathNavigatorTests\XPathNavigatorReaderTests.cs" />
+    <Compile Include="$(CommonPathXPath)\XPathNavigatorTests\XPathNavigatorTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(CommonPathXPath)\TestData\91893.xml">
