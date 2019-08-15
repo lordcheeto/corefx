@@ -62,8 +62,6 @@
     <Compile Include="$(CommonPathXPath)\XPathExpressionTests\EvaluateTests.cs" />
     <Compile Include="$(CommonPathXPath)\XPathNavigatorTests\ManipulationTests.cs" />
     <Compile Include="$(CommonPathXPath)\XPathNavigatorTests\XPathNavigatorCommonTests.cs" />
-    <Compile Include="$(CommonPathXPath)\XPathNavigatorTests\XPathNavigatorEvaluateTests.cs" />
-    <Compile Include="$(CommonPathXPath)\XPathNavigatorTests\XPathNavigatorMatchesTests.cs" />
     <Compile Include="$(CommonPathXPath)\XPathNavigatorTests\XPathNavigatorReaderTests.cs" />
     <Compile Include="$(CommonPathXPath)\XPathNavigatorTests\XPathNavigatorTests.cs" />
   </ItemGroup>
